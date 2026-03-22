@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#18181c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="elf's budget">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>elf's budget</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0f0f11;--surface:#18181c;--surface2:#222228;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0ede8;--muted:#7a7880;
+  --green:#4ecb8d;--green-dim:rgba(78,203,141,0.12);
+  --red:#f06060;--red-dim:rgba(240,96,96,0.12);
+  --blue:#6fa3ef;--blue-dim:rgba(111,163,239,0.12);
+  --amber:#f0b060;
+  --r:12px;--r-sm:8px;
+  --font-d:'DM Serif Display',Georgia,serif;
+  --font:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;}
+.topbar{position:fixed;top:0;left:0;right:0;height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:0;z-index:100;}
+.brand{display:flex;align-items:center;margin-right:20px;flex-shrink:0;}
+.tabs{display:flex;gap:2px;}
+.tab{height:32px;padding:0 12px;border:none;background:none;color:var(--muted);font-family:var(--font);font-size:13px;border-radius:var(--r-sm);cursor:pointer;transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.tab:hover{background:var(--surface2);color:var(--text);}
+.tab.active{background:var(--surface2);color:var(--text);font-weight:500;}
+.tab-icon{font-size:13px;}
+.month-strip{display:flex;align-items:center;gap:4px;margin-left:auto;padding-left:12px;flex-shrink:0;}
+.month-chip{height:26px;padding:0 10px;border:1px solid var(--border2);background:none;color:var(--muted);font-family:var(--font);font-size:12px;border-radius:99px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.month-chip:hover{background:var(--surface2);color:var(--text);}
+.month-chip.active{background:var(--green-dim);color:var(--green);border-color:rgba(78,203,141,0.3);font-weight:500;}
+.month-chip.current-m{position:relative;}
+.month-chip.current-m::after{content:'';position:absolute;top:-2px;right:-1px;width:5px;height:5px;border-radius:50%;background:var(--green);border:1.5px solid var(--bg);}
+.expand-btn{width:26px;height:26px;border:1px solid var(--border2);background:none;color:var(--muted);border-radius:99px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+.expand-btn:hover{background:var(--surface2);color:var(--text);}
+.expand-btn.open{background:var(--surface2);color:var(--text);}
+.month-dropdown{position:fixed;top:60px;right:20px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px;z-index:300;display:none;width:248px;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+.month-dropdown.open{display:block;}
+.mdrop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.mdrop-item{height:32px;padding:0 6px;border:none;background:none;color:var(--muted);font-family:var(--font);font-size:12px;border-radius:var(--r-sm);cursor:pointer;transition:all 0.12s;display:flex;align-items:center;justify-content:center;gap:4px;}
+.mdrop-item:hover{background:var(--surface2);color:var(--text);}
+.mdrop-item.active{background:var(--green-dim);color:var(--green);font-weight:500;}
+.mdrop-item.current-m{color:var(--text);font-weight:500;}
+.mdrop-dot{width:4px;height:4px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.lang-bar{display:flex;gap:4px;margin-left:10px;flex-shrink:0;}
+.lang-flag{width:24px;height:24px;border-radius:50%;border:2px solid transparent;background:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;line-height:1;}
+.lang-flag:hover{transform:scale(1.12);}
+.lang-flag.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(111,163,239,0.25);}
+.main{margin-top:52px;padding:32px 20px 48px;max-width:860px;margin-left:auto;margin-right:auto;}
+.page{display:none;}.page.active{display:block;}
+.dash-hero{text-align:center;margin-bottom:30px;padding-top:8px;}
+.dash-eyebrow{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
+.dash-month{font-family:var(--font-d);font-size:34px;letter-spacing:-0.5px;margin-bottom:4px;}
+.dash-sub{font-size:13px;color:var(--muted);}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;}
+.metric-card.green{border-color:rgba(78,203,141,0.2);}
+.metric-card.red{border-color:rgba(240,96,96,0.2);}
+.metric-card.blue{border-color:rgba(111,163,239,0.2);}
+.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.metric-value{font-size:24px;font-family:var(--font-d);letter-spacing:-0.5px;}
+.metric-value.green{color:var(--green);}.metric-value.red{color:var(--red);}.metric-value.blue{color:var(--blue);}
+.metric-change{font-size:11px;margin-top:3px;color:var(--muted);}
+.metric-change .up{color:var(--green);font-weight:600;}.metric-change .dn{color:var(--red);font-weight:600;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.panel-full{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.panel-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+.panel-tag{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:99px;padding:2px 9px;}
+.chart-wrap{position:relative;height:180px;}
+.form-row{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+.form-row input,.form-row select{flex:1;min-width:90px;height:34px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:0 11px;outline:none;}
+.form-row input:focus,.form-row select:focus{border-color:rgba(255,255,255,0.25);}
+.form-row select option{background:var(--surface2);}
+.add-btn{height:34px;padding:0 14px;border:1px solid var(--border2);border-radius:var(--r-sm);background:none;color:var(--text);font-family:var(--font);font-size:13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;font-weight:500;}
+.add-btn.inc{border-color:rgba(78,203,141,0.4);color:var(--green);}.add-btn.inc:hover{background:var(--green-dim);}
+.add-btn.exp{border-color:rgba(240,96,96,0.4);color:var(--red);}.add-btn.exp:hover{background:var(--red-dim);}
+.add-btn.goal{border-color:rgba(111,163,239,0.4);color:var(--blue);}.add-btn.goal:hover{background:var(--blue-dim);}
+.item-list{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto;}
+.item-list::-webkit-scrollbar{width:3px;}
+.item-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+.item{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--surface2);border-radius:var(--r-sm);border:1px solid transparent;transition:border-color 0.12s;}
+.item:hover{border-color:var(--border2);}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.item-info{flex:1;min-width:0;}
+.item-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-cat{font-size:11px;color:var(--muted);margin-top:1px;}
+.item-date{font-size:11px;color:var(--muted);flex-shrink:0;}
+.item-amt{font-size:13px;font-weight:600;flex-shrink:0;}
+.item-amt.inc{color:var(--green);}.item-amt.exp{color:var(--red);}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;}
+.del-btn:hover{background:var(--red-dim);color:var(--red);}
+.empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 0;}
+.progress-item{margin-bottom:10px;}
+.progress-header{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.progress-header .cat-name{color:var(--text);}.progress-header .cat-stats{color:var(--muted);}
+.progress-bar{height:4px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:99px;transition:width 0.5s ease;}
+.goal-item{display:flex;align-items:center;gap:11px;padding:12px;background:var(--surface2);border-radius:var(--r-sm);margin-bottom:7px;border:1px solid transparent;transition:border-color 0.12s;}
+.goal-item:hover{border-color:var(--border2);}
+.goal-icon{width:30px;height:30px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.goal-info{flex:1;min-width:0;}
+.goal-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.goal-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.goal-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;flex-shrink:0;}
+.goal-status.open{background:var(--blue-dim);color:var(--blue);}.goal-status.done{background:var(--green-dim);color:var(--green);}
+.goal-toggle{background:none;border:none;cursor:pointer;font-size:16px;padding:3px;flex-shrink:0;}
+.goal-toggle:hover{transform:scale(1.15);}
+.history-rows{display:flex;flex-direction:column;gap:5px;}
+.history-row{background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;border:1px solid transparent;}
+.history-row.current-row{border-color:rgba(111,163,239,0.3);}
+.hm-name{font-size:13px;font-weight:500;}
+.hm-inc{font-size:13px;color:var(--green);}.hm-exp{font-size:13px;color:var(--red);}
+.hm-bal{font-size:13px;font-weight:600;}.hm-bal.pos{color:var(--blue);}.hm-bal.neg{color:var(--red);}
+.hist-tag{font-size:10px;color:var(--blue);margin-left:5px;}
+.section-heading{font-family:var(--font-d);font-size:22px;letter-spacing:-0.3px;margin-bottom:20px;}
+.export-bar{display:flex;justify-content:flex-end;margin-bottom:12px;}
+.export-btn{height:30px;padding:0 13px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(111,163,239,0.25);border-radius:var(--r-sm);font-family:var(--font);font-size:12px;cursor:pointer;font-weight:500;transition:all 0.15s;}
+.export-btn:hover{background:rgba(111,163,239,0.2);}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 14px;font-size:13px;opacity:0;transform:translateY(5px);transition:all 0.2s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateY(0);}
+@media(max-width:640px){.metrics{grid-template-columns:1fr 1fr;}.grid2{grid-template-columns:1fr;}.tab .tab-label{display:none;}.month-strip{display:none;}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand" id="brand">
+    <svg width="130" height="32" viewBox="0 0 130 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+      <!-- Leaf/sprout coin icon -->
+      <circle cx="16" cy="16" r="13" fill="url(#coinGrad)" opacity="0.95"/>
+      <!-- Coin inner ring -->
+      <circle cx="16" cy="16" r="10" stroke="rgba(255,255,255,0.15)" stroke-width="0.8" fill="none"/>
+      <!-- Leaf shape -->
+      <path d="M16 22 C16 22 10 18 10 13 C10 9.5 13 7.5 16 9 C19 7.5 22 9.5 22 13 C22 18 16 22 16 22Z" fill="white" opacity="0.9"/>
+      <!-- Stem -->
+      <path d="M16 22 L16 25" stroke="white" stroke-width="1.4" stroke-linecap="round" opacity="0.8"/>
+      <!-- Left tendril -->
+      <path d="M16 20 C14 19 12.5 20.5 13 22" stroke="white" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+      <defs>
+        <linearGradient id="coinGrad" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#4ecb8d"/>
+          <stop offset="100%" stop-color="#2a9d6f"/>
+        </linearGradient>
+      </defs>
+      <!-- "elf's" text -->
+      <text x="34" y="13" font-family="'DM Serif Display', Georgia, serif" font-size="11" fill="#7a7880" letter-spacing="0.5">elf's</text>
+      <!-- "budget" text -->
+      <text x="34" y="26" font-family="'DM Serif Display', Georgia, serif" font-size="14" fill="#f0ede8" letter-spacing="-0.3">budget</text>
+    </svg>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="goPage('dashboard')"><span class="tab-icon">◈</span><span class="tab-label" id="nav-dashboard">Özet</span></button>
+    <button class="tab" onclick="goPage('transactions')"><span class="tab-icon">≡</span><span class="tab-label" id="nav-transactions">İşlemler</span></button>
+    <button class="tab" onclick="goPage('goals')"><span class="tab-icon">◎</span><span class="tab-label" id="nav-goals">Hedefler</span></button>
+    <button class="tab" onclick="goPage('history')"><span class="tab-icon">◷</span><span class="tab-label" id="nav-history">Geçmiş</span></button>
+  </div>
+  <div class="month-strip" id="month-strip"></div>
+  <div class="lang-bar">
+    <button class="lang-flag active" onclick="setLang('tr')" title="Türkçe">🇹🇷</button>
+    <button class="lang-flag" onclick="setLang('en')" title="English">🇬🇧</button>
+    <button class="lang-flag" onclick="setLang('es')" title="Español">🇪🇸</button>
+  </div>
+</header>
+
+<div class="month-dropdown" id="month-dropdown">
+  <div class="mdrop-grid" id="mdrop-grid"></div>
+</div>
+
+<main class="main">
+  <div id="page-dashboard" class="page active">
+    <div class="dash-hero">
+      <div class="dash-eyebrow" id="dash-eyebrow">Aylık bütçe durumu</div>
+      <div class="dash-month" id="dash-month"></div>
+      <div class="dash-sub" id="dash-sub">Tüm gelir ve giderleriniz bir arada</div>
+    </div>
+    <div class="metrics">
+      <div class="metric-card green"><div class="metric-label" id="label-total-inc">Toplam Gelir</div><div class="metric-value green" id="d-inc">₺0</div><div class="metric-change" id="d-inc-change"></div></div>
+      <div class="metric-card red"><div class="metric-label" id="label-total-exp">Toplam Gider</div><div class="metric-value red" id="d-exp">₺0</div><div class="metric-change" id="d-exp-change"></div></div>
+      <div class="metric-card blue"><div class="metric-label" id="label-balance">Net Bakiye</div><div class="metric-value blue" id="d-bal">₺0</div><div class="metric-change" id="d-bal-change"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title" id="chart-bar-title">Gelir / Gider</span><span class="panel-tag" id="savings-rate">Tasarruf: %0</span></div>
+        <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title" id="chart-donut-title">Gider Dağılımı</span></div>
+        <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      </div>
+    </div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="cat-panel-title">Kategori bazlı harcamalar</span></div>
+      <div id="cat-progress"></div>
+    </div>
+  </div>
+
+  <div id="page-transactions" class="page">
+    <div class="section-heading" id="tx-heading">İşlemler</div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="add-income-title">Gelir ekle</span></div>
+      <div class="form-row"><input id="inc-name"/><input id="inc-amount" type="number" style="max-width:130px"/><select id="inc-cat"></select><button class="add-btn inc" onclick="addIncome()" id="btn-add-income">+ Gelir Ekle</button></div>
+      <div class="item-list" id="income-list"></div>
+    </div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="add-expense-title">Gider ekle</span></div>
+      <div class="form-row"><input id="exp-name"/><input id="exp-amount" type="number" style="max-width:130px"/><select id="exp-cat"></select><button class="add-btn exp" onclick="addExpense()" id="btn-add-expense">+ Gider Ekle</button></div>
+      <div class="item-list" id="expense-list"></div>
+    </div>
+  </div>
+
+  <div id="page-goals" class="page">
+    <div class="section-heading" id="goals-heading">Hedefler</div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="add-goal-title">Yeni hedef</span></div>
+      <div class="form-row"><input id="goal-name" style="flex:2"/><input id="goal-target" type="number" style="max-width:150px"/><button class="add-btn goal" onclick="addGoal()" id="btn-add-goal">+ Ekle</button></div>
+    </div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="current-goals-title">Mevcut hedefler</span></div>
+      <div id="goal-list"></div>
+    </div>
+  </div>
+
+  <div id="page-history" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="section-heading" style="margin-bottom:0" id="history-heading">Geçmiş</div>
+      <button class="export-btn" onclick="exportCSV()" id="export-btn">↓ CSV indir</button>
+    </div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="trend-title">6 aylık trend</span></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="panel-full">
+      <div class="panel-header"><span class="panel-title" id="monthly-summary-title">Ay bazlı özet</span></div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const LANGS={
+  tr:{brand:'Bütçe',months:['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'],monthsShort:['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'],navDashboard:'Özet',navTransactions:'İşlemler',navGoals:'Hedefler',navHistory:'Geçmiş',dashEyebrow:'Aylık bütçe durumu',dashSub:'Tüm gelir ve giderleriniz bir arada',labelTotalInc:'Toplam Gelir',labelTotalExp:'Toplam Gider',labelBalance:'Net Bakiye',chartBarTitle:'Gelir / Gider',chartDonutTitle:'Gider Dağılımı',catPanelTitle:'Kategori bazlı harcamalar',catEmpty:'Henüz gider eklenmedi',savingsLabel:'Tasarruf',barLabels:['Gelir','Gider','Bakiye'],noData:'Veri yok',txHeading:'İşlemler',addIncomeTitle:'Gelir ekle',addExpenseTitle:'Gider ekle',incNamePh:'Açıklama (maaş, kira geliri...)',incAmtPh:'Tutar (₺)',expNamePh:'Açıklama (market, elektrik...)',expAmtPh:'Tutar (₺)',btnAddIncome:'+ Gelir Ekle',btnAddExpense:'+ Gider Ekle',emptyIncome:'Bu ay henüz gelir eklenmedi',emptyExpense:'Bu ay henüz gider eklenmedi',incomeCats:['Maaş','Serbest','Yatırım','Kira geliri','Diğer'],expenseCats:['Konut','Market','Ulaşım','Sağlık','Eğlence','Eğitim','Faturalar','Giyim','Diğer'],goalsHeading:'Hedefler',addGoalTitle:'Yeni hedef',currentGoalsTitle:'Mevcut hedefler',goalNamePh:'Hedefinizi yazın (Tatil fonu, Araba...)',goalTargetPh:'Hedef tutar (₺)',btnAddGoal:'+ Ekle',emptyGoals:'Henüz hedef eklenmedi',goalStatusOpen:'Devam ediyor',goalStatusDone:'Tamamlandı',historyHeading:'Geçmiş',trendTitle:'6 aylık trend',monthlySummaryTitle:'Ay bazlı özet',histColMonth:'Ay',histColInc:'Gelir',histColExp:'Gider',histColBal:'Bakiye',histCurrentLabel:'bu ay',histEmpty:'Veri bulunmuyor',exportBtn:'↓ CSV indir',toastIncAdded:'Gelir eklendi',toastExpAdded:'Gider eklendi',toastGoalSaved:'Hedef eklendi',toastCsvDone:'CSV indirildi',toastFillFields:'Açıklama ve tutar girin',toastFillGoal:'Hedef adı girin',compareLabel:'Geçen aya göre',expandLabel:'Tüm aylar',csvHeaders:'Ay,Tür,Açıklama,Kategori,Tutar,Tarih',csvIncome:'Gelir',csvExpense:'Gider',trendIncome:'Gelir',trendExpense:'Gider',currency:'₺',locale:'tr-TR',dateLocale:'tr-TR'},
+  en:{brand:'Budget',months:['January','February','March','April','May','June','July','August','September','October','November','December'],monthsShort:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],navDashboard:'Overview',navTransactions:'Transactions',navGoals:'Goals',navHistory:'History',dashEyebrow:'Monthly budget status',dashSub:'All your income and expenses in one place',labelTotalInc:'Total Income',labelTotalExp:'Total Expenses',labelBalance:'Net Balance',chartBarTitle:'Income / Expenses',chartDonutTitle:'Expense Breakdown',catPanelTitle:'Spending by category',catEmpty:'No expenses yet',savingsLabel:'Savings',barLabels:['Income','Expenses','Balance'],noData:'No data',txHeading:'Transactions',addIncomeTitle:'Add income',addExpenseTitle:'Add expense',incNamePh:'Description (salary, rental...)',incAmtPh:'Amount ($)',expNamePh:'Description (groceries, bills...)',expAmtPh:'Amount ($)',btnAddIncome:'+ Add Income',btnAddExpense:'+ Add Expense',emptyIncome:'No income this month',emptyExpense:'No expenses this month',incomeCats:['Salary','Freelance','Investments','Rental','Other'],expenseCats:['Housing','Groceries','Transport','Health','Entertainment','Education','Bills','Clothing','Other'],goalsHeading:'Goals',addGoalTitle:'New goal',currentGoalsTitle:'Current goals',goalNamePh:'Write your goal (Vacation fund, New car...)',goalTargetPh:'Target amount ($)',btnAddGoal:'+ Add',emptyGoals:'No goals yet',goalStatusOpen:'In progress',goalStatusDone:'Completed',historyHeading:'History',trendTitle:'6-month trend',monthlySummaryTitle:'Monthly summary',histColMonth:'Month',histColInc:'Income',histColExp:'Expenses',histColBal:'Balance',histCurrentLabel:'this month',histEmpty:'No data available',exportBtn:'↓ Export CSV',toastIncAdded:'Income added',toastExpAdded:'Expense added',toastGoalSaved:'Goal added',toastCsvDone:'CSV downloaded',toastFillFields:'Enter description and amount',toastFillGoal:'Enter goal name',compareLabel:'vs last month',expandLabel:'All months',csvHeaders:'Month,Type,Description,Category,Amount,Date',csvIncome:'Income',csvExpense:'Expense',trendIncome:'Income',trendExpense:'Expenses',currency:'$',locale:'en-US',dateLocale:'en-US'},
+  es:{brand:'Presupuesto',months:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],monthsShort:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],navDashboard:'Resumen',navTransactions:'Transacciones',navGoals:'Metas',navHistory:'Historial',dashEyebrow:'Estado del presupuesto mensual',dashSub:'Todos sus ingresos y gastos en un lugar',labelTotalInc:'Total Ingresos',labelTotalExp:'Total Gastos',labelBalance:'Saldo Neto',chartBarTitle:'Ingresos / Gastos',chartDonutTitle:'Distribución de Gastos',catPanelTitle:'Gastos por categoría',catEmpty:'Sin gastos aún',savingsLabel:'Ahorro',barLabels:['Ingresos','Gastos','Saldo'],noData:'Sin datos',txHeading:'Transacciones',addIncomeTitle:'Añadir ingreso',addExpenseTitle:'Añadir gasto',incNamePh:'Descripción (salario, alquiler...)',incAmtPh:'Importe (€)',expNamePh:'Descripción (supermercado, luz...)',expAmtPh:'Importe (€)',btnAddIncome:'+ Añadir Ingreso',btnAddExpense:'+ Añadir Gasto',emptyIncome:'Sin ingresos este mes',emptyExpense:'Sin gastos este mes',incomeCats:['Salario','Autónomo','Inversiones','Alquiler','Otros'],expenseCats:['Vivienda','Alimentación','Transporte','Salud','Ocio','Educación','Facturas','Ropa','Otros'],goalsHeading:'Metas',addGoalTitle:'Nueva meta',currentGoalsTitle:'Metas actuales',goalNamePh:'Escriba su meta (Vacaciones, Coche nuevo...)',goalTargetPh:'Importe objetivo (€)',btnAddGoal:'+ Añadir',emptyGoals:'Sin metas aún',goalStatusOpen:'En progreso',goalStatusDone:'Completado',historyHeading:'Historial',trendTitle:'Tendencia 6 meses',monthlySummaryTitle:'Resumen mensual',histColMonth:'Mes',histColInc:'Ingresos',histColExp:'Gastos',histColBal:'Saldo',histCurrentLabel:'este mes',histEmpty:'Sin datos disponibles',exportBtn:'↓ Exportar CSV',toastIncAdded:'Ingreso añadido',toastExpAdded:'Gasto añadido',toastGoalSaved:'Meta añadida',toastCsvDone:'CSV descargado',toastFillFields:'Ingrese descripción e importe',toastFillGoal:'Ingrese nombre de meta',compareLabel:'vs mes anterior',expandLabel:'Todos los meses',csvHeaders:'Mes,Tipo,Descripción,Categoría,Importe,Fecha',csvIncome:'Ingreso',csvExpense:'Gasto',trendIncome:'Ingresos',trendExpense:'Gastos',currency:'€',locale:'es-ES',dateLocale:'es-ES'}
+};
+
+const CAT_COLORS=['#6fa3ef','#4ecb8d','#f0b060','#f06060','#a78bfa','#2dd4bf','#fb923c','#e879f9','#7a7880','#34d399','#818cf8','#facc15','#f87171','#60a5fa'];
+const GOAL_ICONS=['🎯','✈️','🚗','🏠','📚','💰','🏖️','💻','🎸','🐾','💍','🌱','🏋️','🎓'];
+
+let lang=localStorage.getItem('butce_lang')||'tr';
+let T=LANGS[lang];
+let data=JSON.parse(localStorage.getItem('butce_data')||'null')||{};
+let goals=JSON.parse(localStorage.getItem('butce_goals')||'[]');
+let currentMonth=monthKey(new Date());
+let dropdownOpen=false;
+let barChart=null,donutChart=null,trendChart=null;
+
+function monthKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function monthLabel(key){const[y,m]=key.split('-');return T.months[parseInt(m)-1]+' '+y;}
+function save(){localStorage.setItem('butce_data',JSON.stringify(data));localStorage.setItem('butce_goals',JSON.stringify(goals));}
+function fmt(n){return T.currency+Math.round(n).toLocaleString(T.locale);}
+function pct(a,b){return b?Math.round(a/b*100):0;}
+function getMonth(key){if(!data[key])data[key]={incomes:[],expenses:[]};return data[key];}
+function allMonthKeys(){const keys=Object.keys(data).filter(k=>data[k].incomes.length||data[k].expenses.length);keys.push(currentMonth);return[...new Set(keys)].sort().reverse();}
+function getCatColor(cat){const all=[...T.incomeCats,...T.expenseCats];const idx=all.indexOf(cat);return CAT_COLORS[idx>=0?idx%CAT_COLORS.length:CAT_COLORS.length-1];}
+
+function setLang(l){lang=l;T=LANGS[l];localStorage.setItem('butce_lang',l);document.querySelectorAll('.lang-flag').forEach((b,i)=>b.classList.toggle('active',['tr','en','es'][i]===l));applyTranslations();buildMonthStrip();goPage(document.querySelector('.page.active').id.replace('page-',''));}
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function setAttr(id,attr,val){const el=document.getElementById(id);if(el)el.setAttribute(attr,val);}
+function buildSelect(id,opts){const el=document.getElementById(id);if(el)el.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join('');}
+
+function applyTranslations(){
+  setText('nav-dashboard',T.navDashboard);setText('nav-transactions',T.navTransactions);setText('nav-goals',T.navGoals);setText('nav-history',T.navHistory);
+  setText('dash-eyebrow',T.dashEyebrow);setText('dash-sub',T.dashSub);
+  setText('label-total-inc',T.labelTotalInc);setText('label-total-exp',T.labelTotalExp);setText('label-balance',T.labelBalance);
+  setText('chart-bar-title',T.chartBarTitle);setText('chart-donut-title',T.chartDonutTitle);setText('cat-panel-title',T.catPanelTitle);
+  setText('tx-heading',T.txHeading);setText('add-income-title',T.addIncomeTitle);setText('add-expense-title',T.addExpenseTitle);setText('btn-add-income',T.btnAddIncome);setText('btn-add-expense',T.btnAddExpense);
+  setText('goals-heading',T.goalsHeading);setText('add-goal-title',T.addGoalTitle);setText('current-goals-title',T.currentGoalsTitle);setText('btn-add-goal',T.btnAddGoal);
+  setText('history-heading',T.historyHeading);setText('trend-title',T.trendTitle);setText('monthly-summary-title',T.monthlySummaryTitle);setText('export-btn',T.exportBtn);
+  setAttr('inc-name','placeholder',T.incNamePh);setAttr('inc-amount','placeholder',T.incAmtPh);setAttr('exp-name','placeholder',T.expNamePh);setAttr('exp-amount','placeholder',T.expAmtPh);setAttr('goal-name','placeholder',T.goalNamePh);setAttr('goal-target','placeholder',T.goalTargetPh);
+  buildSelect('inc-cat',T.incomeCats);buildSelect('exp-cat',T.expenseCats);
+}
+
+function buildMonthStrip(){
+  const strip=document.getElementById('month-strip');
+  const now=new Date(),thisYear=now.getFullYear(),thisMo=now.getMonth();
+  // Show prev, current, next month chips
+  const visIdx=[];
+  for(let o=-1;o<=1;o++){const m=thisMo+o;if(m>=0&&m<=11)visIdx.push(m);}
+  const chips=visIdx.map(mo=>{
+    const key=thisYear+'-'+String(mo+1).padStart(2,'0');
+    return`<button class="month-chip${key===currentMonth?' active':''}${mo===thisMo?' current-m':''}" onclick="selectMonth('${key}')">${T.monthsShort[mo]}</button>`;
+  }).join('');
+  strip.innerHTML=chips+`<button class="expand-btn${dropdownOpen?' open':''}" id="expand-btn" onclick="toggleDropdown()">⊞</button>`;
+  // Dropdown
+  const grid=document.getElementById('mdrop-grid');
+  grid.innerHTML='';
+  for(let mo=0;mo<12;mo++){
+    const key=thisYear+'-'+String(mo+1).padStart(2,'0');
+    const btn=document.createElement('button');
+    btn.className=`mdrop-item${key===currentMonth?' active':''}${mo===thisMo?' current-m':''}`;
+    btn.onclick=()=>{selectMonth(key);closeDropdown();};
+    btn.innerHTML=T.monthsShort[mo]+(mo===thisMo?` <span class="mdrop-dot"></span>`:'');
+    grid.appendChild(btn);
+  }
+}
+
+function toggleDropdown(){dropdownOpen=!dropdownOpen;document.getElementById('month-dropdown').classList.toggle('open',dropdownOpen);const b=document.getElementById('expand-btn');if(b)b.classList.toggle('open',dropdownOpen);}
+function closeDropdown(){dropdownOpen=false;document.getElementById('month-dropdown').classList.remove('open');const b=document.getElementById('expand-btn');if(b)b.classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('#month-strip')&&!e.target.closest('#month-dropdown'))closeDropdown();});
+
+function selectMonth(key){currentMonth=key;buildMonthStrip();goPage(document.querySelector('.page.active').id.replace('page-',''));}
+
+function goPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab')[['dashboard','transactions','goals','history'].indexOf(page)].classList.add('active');
+  if(page==='dashboard')refreshDashboard();
+  if(page==='transactions')refreshTransactions();
+  if(page==='goals')refreshGoals();
+  if(page==='history')refreshHistory();
+}
+
+function refreshDashboard(){
+  const m=getMonth(currentMonth),inc=m.incomes.reduce((s,x)=>s+x.amount,0),exp=m.expenses.reduce((s,x)=>s+x.amount,0),bal=inc-exp;
+  setText('dash-month',monthLabel(currentMonth));
+  document.getElementById('d-inc').textContent=fmt(inc);document.getElementById('d-exp').textContent=fmt(exp);document.getElementById('d-bal').textContent=fmt(bal);
+  document.getElementById('d-bal').className='metric-value '+(bal>=0?'blue':'red');
+  const[y,mo]=currentMonth.split('-').map(Number),pm=data[monthKey(new Date(y,mo-2,1))];
+  if(pm){const pi=pm.incomes.reduce((s,x)=>s+x.amount,0),pe=pm.expenses.reduce((s,x)=>s+x.amount,0);setChange('d-inc-change',inc,pi);setChange('d-exp-change',exp,pe);setChange('d-bal-change',bal,pi-pe);}
+  else['d-inc-change','d-exp-change','d-bal-change'].forEach(id=>document.getElementById(id).innerHTML='');
+  const sr=inc>0?Math.max(0,Math.round((1-exp/inc)*100)):0;setText('savings-rate',T.savingsLabel+': '+sr+'%');
+  drawBar(inc,exp);drawDonut(m.expenses);drawCatProgress(m.expenses,exp);
+}
+
+function setChange(id,cur,prev){const el=document.getElementById(id);if(!prev){el.innerHTML='';return;}const diff=cur-prev,pv=Math.abs(Math.round(diff/prev*100)),up=diff>=0;el.innerHTML=`${T.compareLabel} <span class="${up?'up':'dn'}">${up?'+':'-'}${pv}%</span>`;}
+
+function drawBar(inc,exp){if(barChart){barChart.destroy();barChart=null;}barChart=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:T.barLabels,datasets:[{data:[inc,exp,Math.max(0,inc-exp)],backgroundColor:['rgba(78,203,141,0.8)','rgba(240,96,96,0.8)','rgba(111,163,239,0.8)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>T.currency+v.toLocaleString(T.locale),color:'#7a7880',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},border:{display:false}},x:{ticks:{color:'#7a7880',font:{size:12}},grid:{display:false},border:{display:false}}}}});}
+
+function drawDonut(expenses){if(donutChart){donutChart.destroy();donutChart=null;}const cats={};expenses.forEach(e=>cats[e.cat]=(cats[e.cat]||0)+e.amount);const labels=Object.keys(cats),vals=labels.map(l=>cats[l]);if(!vals.length){donutChart=new Chart(document.getElementById('donutChart'),{type:'doughnut',data:{labels:[T.noData],datasets:[{data:[1],backgroundColor:['rgba(122,120,128,0.25)']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});return;}donutChart=new Chart(document.getElementById('donutChart'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:labels.map(l=>getCatColor(l)),borderWidth:2,borderColor:'#0f0f11'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:true,position:'right',labels:{color:'#7a7880',font:{size:11},boxWidth:9,padding:7}}}}});}
+
+function drawCatProgress(expenses,total){const el=document.getElementById('cat-progress');if(!expenses.length){el.innerHTML=`<div class="empty">${T.catEmpty}</div>`;return;}const cats={};expenses.forEach(e=>cats[e.cat]=(cats[e.cat]||0)+e.amount);el.innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>{const p=pct(amt,total);return`<div class="progress-item"><div class="progress-header"><span class="cat-name">${cat}</span><span class="cat-stats">${fmt(amt)} · ${p}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:${getCatColor(cat)}"></div></div></div>`;}).join('');}
+
+function refreshTransactions(){renderList(getMonth(currentMonth).incomes,'income-list','inc');renderList(getMonth(currentMonth).expenses,'expense-list','exp');}
+
+function renderList(items,id,type){const el=document.getElementById(id);if(!items.length){el.innerHTML=`<div class="empty">${type==='inc'?T.emptyIncome:T.emptyExpense}</div>`;return;}el.innerHTML=[...items].reverse().map((item,ri)=>{const i=items.length-1-ri;return`<div class="item"><div class="dot" style="background:${getCatColor(item.cat)}"></div><div class="item-info"><div class="item-name">${item.name}</div><div class="item-cat">${item.cat}</div></div><span class="item-date">${item.date||''}</span><span class="item-amt ${type}">${type==='inc'?'+':'-'}${fmt(item.amount)}</span><button class="del-btn" onclick="deleteItem('${type}',${i})">✕</button></div>`;}).join('');}
+
+function addIncome(){const name=document.getElementById('inc-name').value.trim(),amount=parseFloat(document.getElementById('inc-amount').value),cat=document.getElementById('inc-cat').value;if(!name||!amount||amount<=0){showToast(T.toastFillFields);return;}getMonth(currentMonth).incomes.push({name,amount,cat,date:new Date().toLocaleDateString(T.dateLocale)});save();document.getElementById('inc-name').value='';document.getElementById('inc-amount').value='';refreshTransactions();buildMonthStrip();showToast(T.toastIncAdded);}
+function addExpense(){const name=document.getElementById('exp-name').value.trim(),amount=parseFloat(document.getElementById('exp-amount').value),cat=document.getElementById('exp-cat').value;if(!name||!amount||amount<=0){showToast(T.toastFillFields);return;}getMonth(currentMonth).expenses.push({name,amount,cat,date:new Date().toLocaleDateString(T.dateLocale)});save();document.getElementById('exp-name').value='';document.getElementById('exp-amount').value='';refreshTransactions();buildMonthStrip();showToast(T.toastExpAdded);}
+function deleteItem(type,i){const m=getMonth(currentMonth);if(type==='inc')m.incomes.splice(i,1);else m.expenses.splice(i,1);save();refreshTransactions();buildMonthStrip();}
+
+function addGoal(){const name=document.getElementById('goal-name').value.trim(),target=parseFloat(document.getElementById('goal-target').value)||0;if(!name){showToast(T.toastFillGoal);return;}goals.push({name,target,done:false,icon:GOAL_ICONS[goals.length%GOAL_ICONS.length],createdAt:new Date().toLocaleDateString(T.dateLocale)});save();document.getElementById('goal-name').value='';document.getElementById('goal-target').value='';refreshGoals();showToast(T.toastGoalSaved);}
+function toggleGoal(i){goals[i].done=!goals[i].done;save();refreshGoals();}
+function deleteGoal(i){goals.splice(i,1);save();refreshGoals();}
+function refreshGoals(){const el=document.getElementById('goal-list');if(!goals.length){el.innerHTML=`<div class="empty">${T.emptyGoals}</div>`;return;}el.innerHTML=goals.map((g,i)=>{const scls=g.done?'done':'open',slbl=g.done?T.goalStatusDone:T.goalStatusOpen,tglIcon=g.done?'↩':'✓',tglColor=g.done?'var(--amber)':'var(--green)',meta=(g.createdAt||'')+(g.target>0?' · '+fmt(g.target):'');return`<div class="goal-item" style="${g.done?'opacity:0.55;':''}"><div class="goal-icon">${g.icon||'🎯'}</div><div class="goal-info"><div class="goal-name" style="${g.done?'text-decoration:line-through;':''}">${g.name}</div><div class="goal-meta">${meta}</div></div><span class="goal-status ${scls}">${slbl}</span><button class="goal-toggle" onclick="toggleGoal(${i})" style="color:${tglColor}">${tglIcon}</button><button class="del-btn" onclick="deleteGoal(${i})">✕</button></div>`;}).join('');}
+
+function refreshHistory(){const keys=allMonthKeys().slice(0,12),histList=document.getElementById('history-list');if(!keys.length){histList.innerHTML=`<div class="empty">${T.histEmpty}</div>`;return;}histList.innerHTML=`<div class="history-rows"><div style="display:grid;grid-template-columns:1fr auto auto auto;gap:14px;padding:6px 14px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;"><span>${T.histColMonth}</span><span>${T.histColInc}</span><span>${T.histColExp}</span><span>${T.histColBal}</span></div>${keys.map(key=>{const m=getMonth(key),inc=m.incomes.reduce((s,x)=>s+x.amount,0),exp=m.expenses.reduce((s,x)=>s+x.amount,0),bal=inc-exp,isCurrent=key===currentMonth;return`<div class="history-row${isCurrent?' current-row':''}"><span class="hm-name">${monthLabel(key)}${isCurrent?` <span class="hist-tag">● ${T.histCurrentLabel}</span>`:''}</span><span class="hm-inc">${fmt(inc)}</span><span class="hm-exp">${fmt(exp)}</span><span class="hm-bal ${bal>=0?'pos':'neg'}">${fmt(bal)}</span></div>`;}).join('')}</div>`;const last6=allMonthKeys().slice(0,6).reverse();if(trendChart){trendChart.destroy();trendChart=null;}trendChart=new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:last6.map(k=>monthLabel(k)),datasets:[{label:T.trendIncome,data:last6.map(k=>getMonth(k).incomes.reduce((s,x)=>s+x.amount,0)),borderColor:'#4ecb8d',backgroundColor:'rgba(78,203,141,0.08)',tension:0.4,fill:true,pointRadius:4,borderWidth:2},{label:T.trendExpense,data:last6.map(k=>getMonth(k).expenses.reduce((s,x)=>s+x.amount,0)),borderColor:'#f06060',backgroundColor:'rgba(240,96,96,0.08)',tension:0.4,fill:true,pointRadius:4,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7880',font:{size:12},boxWidth:11}}},scales:{y:{ticks:{callback:v=>T.currency+v.toLocaleString(T.locale),color:'#7a7880',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},border:{display:false}},x:{ticks:{color:'#7a7880',font:{size:11}},grid:{display:false},border:{display:false}}}}});}
+
+function exportCSV(){const keys=allMonthKeys();let rows=[T.csvHeaders];keys.forEach(key=>{const m=getMonth(key);m.incomes.forEach(x=>rows.push([monthLabel(key),T.csvIncome,x.name,x.cat,x.amount,x.date||''].join(',')));m.expenses.forEach(x=>rows.push([monthLabel(key),T.csvExpense,x.name,x.cat,x.amount,x.date||''].join(',')));});const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='budget.csv';a.click();URL.revokeObjectURL(url);showToast(T.toastCsvDone);}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+document.querySelectorAll('.lang-flag').forEach((b,i)=>b.classList.toggle('active',['tr','en','es'][i]===lang));
+applyTranslations();buildMonthStrip();refreshDashboard();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

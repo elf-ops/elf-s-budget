@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#18181c"/>
+  <circle cx="96" cy="88" r="58" fill="url(#g)"/>
+  <circle cx="96" cy="88" r="44" stroke="rgba(255,255,255,0.12)" stroke-width="2" fill="none"/>
+  <path d="M96 112 C96 112 72 98 72 80 C72 67 81 60 96 65 C111 60 120 67 120 80 C120 98 96 112 96 112Z" fill="white" opacity="0.92"/>
+  <path d="M96 112 L96 124" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.75"/>
+  <path d="M96 106 C88 103 82 108 84 116" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.55"/>
+  <text x="96" y="158" font-family="Georgia,serif" font-size="18" fill="#7a7880" text-anchor="middle" letter-spacing="1">elf's budget</text>
+  <defs>
+    <linearGradient id="g" x1="50" y1="40" x2="142" y2="136" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4ecb8d"/>
+      <stop offset="100%" stop-color="#1e8a5a"/>
+    </linearGradient>
+  </defs>
+</svg>
